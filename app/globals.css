@@ -1,0 +1,158 @@
+@import "tailwindcss";
+
+@theme {
+  /* Ink-blue terminal base */
+  --color-canvas: #0b1019;
+  --color-panel: #111826;
+  --color-raised: #172031;
+  --color-line: #222d40;
+  --color-line-strong: #34425c;
+  --color-ink: #e9edf5;
+  --color-ink-muted: #96a1b6;
+  --color-ink-faint: #627089;
+
+  /* Meaning-only colors */
+  --color-gain: #3fd69a;
+  --color-loss: #ff6b81;
+  --color-buy: #5aa9ff;
+  --color-sell: #b98cff;
+  --color-warn: #f5c451;
+
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-condensed: var(--font-plex-condensed), var(--font-plex-sans), ui-sans-serif, sans-serif;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    background: var(--color-canvas);
+  }
+
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "tnum" 1;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-buy);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-buy) 35%, transparent);
+  }
+
+  dialog::backdrop {
+    background: rgb(4 7 12 / 0.72);
+    backdrop-filter: blur(2px);
+  }
+}
+
+@layer components {
+  /* Data tables: condensed, tabular figures, sticky header. */
+  .data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-family: var(--font-condensed);
+    font-size: 0.875rem;
+  }
+  .data-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--color-panel);
+    color: var(--color-ink-faint);
+    font-weight: 500;
+    text-align: left;
+    white-space: nowrap;
+    padding: 0.625rem 0.75rem;
+    border-bottom: 1px solid var(--color-line-strong);
+  }
+  .data-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--color-line);
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .data-table tbody tr:hover td {
+    background: var(--color-raised);
+  }
+  .data-table .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .field-input {
+    width: 100%;
+    border-radius: 0.375rem;
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-canvas);
+    padding: 0.5rem 0.625rem;
+    font-size: 0.875rem;
+    color: var(--color-ink);
+  }
+  .field-input:focus {
+    border-color: var(--color-buy);
+    outline: none;
+    box-shadow: 0 0 0 1px var(--color-buy);
+  }
+  .field-input[aria-invalid="true"] {
+    border-color: var(--color-loss);
+  }
+
+  /*
+   * Holographic foil frame — the one decorative flourish, reserved for card art.
+   * A conic gradient sits behind the image and shows as a thin iridescent edge.
+   */
+  .foil {
+    position: relative;
+    isolation: isolate;
+    border-radius: 0.5rem;
+    padding: 2px;
+    background: conic-gradient(
+      from var(--foil-angle, 210deg),
+      #7ee8fa,
+      #b98cff,
+      #ff9ad5,
+      #f5c451,
+      #3fd69a,
+      #7ee8fa
+    );
+  }
+  .foil-bar {
+    background: linear-gradient(180deg, #7ee8fa, #b98cff, #ff9ad5, #f5c451, #3fd69a);
+  }
+  .foil > * {
+    border-radius: calc(0.5rem - 2px);
+  }
+  .foil::after {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    border-radius: calc(0.5rem - 2px);
+    background: linear-gradient(
+      115deg,
+      transparent 30%,
+      rgb(255 255 255 / 0.22) 45%,
+      rgb(185 140 255 / 0.18) 52%,
+      transparent 65%
+    );
+    background-size: 250% 100%;
+    background-position: 100% 0;
+    mix-blend-mode: screen;
+    pointer-events: none;
+    transition: background-position 900ms ease;
+  }
+  .foil:hover::after {
+    background-position: 0% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .foil::after {
+    transition: none;
+  }
+}

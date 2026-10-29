@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum TransactionType {
+  BUY
+  SELL
+}
+
+/// Item master. All holdings / P&L figures are derived from `transactions`.
+model Card {
+  id                   String        @id @default(cuid())
+  apiCardId            String?       // pokemontcg.io card id, e.g. "base1-4"
+  name                 String
+  cardNumber           String
+  rarity               String?
+  setName              String
+  language             String        @default("English")
+  imageUrl             String?
+  currentMarketPrice   Float?
+  marketPriceUpdatedAt DateTime?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  transactions         Transaction[]
+
+  @@index([name])
+  @@index([apiCardId])
+}
+
+model Transaction {
+  id        String          @id @default(cuid())
+  cardId    String
+  card      Card            @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  type      TransactionType
+  quantity  Int
+  unitPrice Float
+  fees      Float           @default(0)
+  date      DateTime
+  notes     String?
+  createdAt DateTime        @default(now())
+
+  @@index([cardId, date])
+  @@index([date])
+}
