@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { CardActions, TransactionHistory } from "@/components/card-ledger";
 import { CardImageEditor } from "@/components/card-image-editor";
+import { CardManage } from "@/components/card-manage";
 import { Notice } from "@/components/form-controls";
 import { Breadcrumbs, CardThumb, Panel, Pnl, Skeleton } from "@/components/ui";
 import { getCardDetail } from "@/lib/data";
@@ -61,7 +62,10 @@ async function CardContent({
           <CardImageEditor cardId={card.id} cardName={card.name} imageUrl={card.imageUrl} />
         </div>
         <div className="min-w-0 space-y-5">
-          <CardHeading card={card} />
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <CardHeading card={card} />
+            <CardManage card={card} transactionCount={transactions.length} />
+          </div>
           <CardActions card={card} stock={metrics.quantityInStock} />
           <PerformanceTable card={card} metrics={metrics} />
         </div>
@@ -159,8 +163,8 @@ function PerformanceTable({ card, metrics: m }: { card: CardInfo; metrics: CardM
       </div>
       {card.marketPriceUpdatedAt && (
         <p className="border-t border-line px-4 py-2 text-xs text-ink-faint">
-          Market price from TCGplayer via pokemontcg.io, converted from USD to SGD. Updated{" "}
-          {formatDate(card.marketPriceUpdatedAt)}.
+          Market price updated {formatDate(card.marketPriceUpdatedAt)}. Fetched prices come from TCGplayer,
+          converted from USD to SGD.
         </p>
       )}
     </Panel>

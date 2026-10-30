@@ -366,3 +366,60 @@ export async function createCard(input: NewCardInput): Promise<CreateCardResult>
   refreshAll();
   return { ok: true, cardId: card.id, existing: existing !== null };
 }
+
+export interface CardDetailsInput {
+  name: string;
+  cardNumber: string;
+  rarity?: string | null;
+  setName: string;
+  language: string;
+  currentMarketPrice?: number | null;
+}
+
+/** Edits a card's master data. Image and catalog link are left untouched. */
+export async function updateCardDetails(cardId: string, input: CardDetailsInput): Promise<ActionResult> {
+  const card = await prisma.card.findUnique({ where: { id: String(cardId) } });
+  if (!card) return { ok: false, error: "This card no longer exists." };
+
+  // Reuse the add-card validation; image and API link keep their stored values.
+  const parsed = parseNewCard({ ...input, imageUrl: card.imageUrl, apiCardId: card.apiCardId });
+  if (!parsed.ok) return parsed;
+  const { name, cardNumber, rarity, setName, language, currentMarketPrice } = parsed.value;
+  const priceChanged = currentMarketPrice !== card.currentMarketPrice;
+
+  await prisma.card.update({
+    where: { id: card.id },
+    data: {
+      name,
+      cardNumber,
+      rarity,
+      setName,
+      language,
+      currentMarketPrice,
+      ...(priceChanged && { marketPriceUpdatedAt: currentMarketPrice === null ? null : new Date() }),
+    },
+  });
+  refreshAll();
+  return { ok: true, message: "Card details saved." };
+}
+
+/** Permanently deletes a card and all of its transactions. */
+export async function deleteCard(cardId: string): Promise<ActionResult> {
+  const card = await prisma.card.findUnique({ where: { id: String(cardId) }, select: { id: true, name: true } });
+  if (!card) return { ok: false, error: "This card no longer exists." };
+
+  // Transactions are removed by the schema's onDelete: Cascade.
+  await prisma.card.delete({ where: { id: card.id } });
+  refreshAll();
+  return { ok: true, message: `Deleted ${card.name}.` };
+}
+
+/** Distinct set names already in the vault, for Set field suggestions. */
+export async function listSetNames(): Promise<string[]> {
+  const rows = await prisma.card.findMany({
+    distinct: ["setName"],
+    select: { setName: true },
+    orderBy: { setName: "asc" },
+  });
+  return rows.map((r) => r.setName);
+}

@@ -37,7 +37,7 @@ export function CardThumb({
       height={height}
       loading={eager ? "eager" : "lazy"}
       unoptimized={!canOptimize(src)}
-      className="block bg-raised object-cover"
+      className="block max-w-none bg-raised object-cover"
       style={{ width, height }}
     />
   ) : (

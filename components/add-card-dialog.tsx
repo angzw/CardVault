@@ -6,6 +6,7 @@ import { ArrowLeft, Loader2, PenLine, Plus, Search } from "lucide-react";
 import { createCard, searchCatalog, type CatalogCard, type NewCardInput } from "@/app/actions";
 import { Button, Field, Notice } from "@/components/form-controls";
 import { Modal } from "@/components/modal";
+import { SetNameInput } from "@/components/set-name-input";
 import { CardThumb } from "@/components/ui";
 import { formatMoney, formatUsd, todayInputValue } from "@/lib/format";
 import { LANGUAGES } from "@/lib/types";
@@ -246,7 +247,12 @@ function CardDetailsForm({
             <input id="card-rarity" className="field-input" value={form.rarity} onChange={update("rarity")} />
           </Field>
           <Field label="Set" htmlFor="card-set" error={fields.setName}>
-            <input id="card-set" className="field-input" required value={form.setName} onChange={update("setName")} aria-invalid={Boolean(fields.setName)} />
+            <SetNameInput
+              id="card-set"
+              value={form.setName}
+              onChange={(value) => setForm((f) => ({ ...f, setName: value }))}
+              invalid={Boolean(fields.setName)}
+            />
           </Field>
           <Field label="Language" htmlFor="card-language">
             <select id="card-language" className="field-input" value={form.language} onChange={update("language")}>
