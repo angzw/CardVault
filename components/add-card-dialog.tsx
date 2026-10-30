@@ -3,15 +3,14 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, PenLine, Plus, Search } from "lucide-react";
-import { createCard, searchCatalog, type NewCardInput } from "@/app/actions";
+import { createCard, searchCatalog, type CatalogCard, type NewCardInput } from "@/app/actions";
 import { Button, Field, Notice } from "@/components/form-controls";
 import { Modal } from "@/components/modal";
 import { CardThumb } from "@/components/ui";
-import { formatMoney, todayInputValue } from "@/lib/format";
-import type { TcgCardSuggestion } from "@/lib/tcg";
+import { formatMoney, formatUsd, todayInputValue } from "@/lib/format";
 import { LANGUAGES } from "@/lib/types";
 
-type Step = { kind: "search" } | { kind: "details"; source: TcgCardSuggestion | null };
+type Step = { kind: "search" } | { kind: "details"; source: CatalogCard | null };
 
 export function AddCardDialog() {
   const [open, setOpen] = useState(false);
@@ -64,11 +63,11 @@ function CatalogSearch({
   onPick,
   onManual,
 }: {
-  onPick: (card: TcgCardSuggestion) => void;
+  onPick: (card: CatalogCard) => void;
   onManual: () => void;
 }) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<TcgCardSuggestion[] | null>(null);
+  const [results, setResults] = useState<CatalogCard[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const latest = useRef(0);
@@ -165,7 +164,7 @@ function CardDetailsForm({
   onBack,
   onCreated,
 }: {
-  source: TcgCardSuggestion | null;
+  source: CatalogCard | null;
   onBack: () => void;
   onCreated: () => void;
 }) {
@@ -256,7 +255,14 @@ function CardDetailsForm({
               ))}
             </select>
           </Field>
-          <Field label="Market price (USD)" htmlFor="card-market" error={fields.currentMarketPrice} hint={source ? "From TCGplayer via pokemontcg.io" : undefined}>
+          <Field label="Market price (SGD)"
+            htmlFor="card-market"
+            error={fields.currentMarketPrice}
+            hint={
+              source?.marketPriceUsd != null
+                ? `TCGplayer ${formatUsd(source.marketPriceUsd)}, converted to SGD`
+                : undefined
+            }>
             <input
               id="card-market"
               className="field-input"

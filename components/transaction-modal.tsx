@@ -131,7 +131,7 @@ export function TransactionModal({
               }}
             />
           </Field>
-          <Field label="Unit price (USD)" htmlFor="tx-price" error={fieldErrors.unitPrice}>
+          <Field label="Unit price (SGD)" htmlFor="tx-price" error={fieldErrors.unitPrice}>
             <input
               id="tx-price"
               className="field-input"
@@ -147,7 +147,7 @@ export function TransactionModal({
               autoFocus={!editing}
             />
           </Field>
-          <Field label="Fees (USD)" htmlFor="tx-fees" error={fieldErrors.fees} hint="Shipping, platform, grading">
+          <Field label="Fees (SGD)" htmlFor="tx-fees" error={fieldErrors.fees} hint="Shipping, platform, grading">
             <input
               id="tx-fees"
               className="field-input"

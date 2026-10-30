@@ -72,7 +72,7 @@ export function Pnl({ value, pct }: { value: number | null; pct?: number | null 
   return (
     <span className={pnlTone(value)}>
       {formatSignedMoney(value)}
-      {pct !== undefined && (
+      {pct !== undefined && value !== null && (
         <span className="ml-1.5 text-[0.85em] opacity-80">{formatPct(pct)}</span>
       )}
     </span>

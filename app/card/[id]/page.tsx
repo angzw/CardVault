@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { CardActions, TransactionHistory } from "@/components/card-ledger";
+import { CardImageEditor } from "@/components/card-image-editor";
 import { Notice } from "@/components/form-controls";
 import { Breadcrumbs, CardThumb, Panel, Pnl, Skeleton } from "@/components/ui";
 import { getCardDetail } from "@/lib/data";
@@ -55,8 +56,9 @@ async function CardContent({
       )}
 
       <section className="grid gap-6 lg:grid-cols-[auto_1fr]">
-        <div className="mx-auto lg:mx-0">
+        <div className="mx-auto w-[234px] lg:mx-0">
           <CardThumb src={card.imageUrl} alt={card.name} width={230} foil eager />
+          <CardImageEditor cardId={card.id} cardName={card.name} imageUrl={card.imageUrl} />
         </div>
         <div className="min-w-0 space-y-5">
           <CardHeading card={card} />
@@ -157,7 +159,8 @@ function PerformanceTable({ card, metrics: m }: { card: CardInfo; metrics: CardM
       </div>
       {card.marketPriceUpdatedAt && (
         <p className="border-t border-line px-4 py-2 text-xs text-ink-faint">
-          Market price from TCGplayer via pokemontcg.io, updated {formatDate(card.marketPriceUpdatedAt)}.
+          Market price from TCGplayer via pokemontcg.io, converted from USD to SGD. Updated{" "}
+          {formatDate(card.marketPriceUpdatedAt)}.
         </p>
       )}
     </Panel>

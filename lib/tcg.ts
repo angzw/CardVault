@@ -50,7 +50,8 @@ export interface TcgCardSuggestion {
   setName: string;
   releaseDate: string | null;
   imageUrl: string | null;
-  marketPrice: number | null;
+  /** TCGplayer market price, in US dollars as quoted by the API. */
+  marketPriceUsd: number | null;
   priceVariant: string | null;
 }
 
@@ -119,7 +120,7 @@ export function toSuggestion(card: ApiCard): TcgCardSuggestion {
     setName: card.set.name,
     releaseDate: card.set.releaseDate ?? null,
     imageUrl: card.images?.small ?? card.images?.large ?? null,
-    marketPrice: price,
+    marketPriceUsd: price,
     priceVariant: variant,
   };
 }

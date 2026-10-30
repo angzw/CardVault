@@ -2,6 +2,8 @@
 
 A dark-mode inventory and P&L tracker for Pokémon TCG collectors. Log buys and sales, and every figure (stock, average cost, realized and unrealized profit, ROI) is recalculated from the transaction ledger. Market prices come from TCGplayer via the [Pokémon TCG API](https://pokemontcg.io).
 
+All amounts are in **Singapore dollars (S$)**. TCGplayer quotes prices in US dollars, so fetched prices are converted to SGD using the daily ECB reference rate from [Frankfurter](https://frankfurter.dev).
+
 Requirements: [`docs/requirements.md`](docs/requirements.md)
 
 ## Quick start
@@ -15,7 +17,7 @@ npm run setup        # apply migrations, generate client, load demo data
 npm run dev          # http://localhost:3000
 ```
 
-`npm run db:seed` resets the database to the demo data at any time. **It deletes all cards and transactions.**
+`npm run db:seed` resets the database to the demo data at any time. `npm run db:reset` empties it instead. **Both delete all cards and transactions.**
 
 ### Scripts
 
@@ -27,6 +29,7 @@ npm run dev          # http://localhost:3000
 | `npm run typecheck` / `npm run lint` | TypeScript and ESLint |
 | `npm run db:migrate` | Create and apply a migration after editing `prisma/schema.prisma` |
 | `npm run db:seed` | Replace all data with the demo set |
+| `npm run db:reset` | Wipe the database to an empty vault (asks for confirmation) |
 | `npm run db:studio` | Browse the database in Prisma Studio |
 
 ### Environment
@@ -35,6 +38,7 @@ npm run dev          # http://localhost:3000
 | --- | --- | --- |
 | `DATABASE_URL` | Yes | `file:./prisma/dev.db` for SQLite |
 | `POKEMONTCG_API_KEY` | No | Raises pokemontcg.io rate limits. The API works without a key. |
+| `USD_SGD_RATE` | No | Pins the USD→SGD rate (e.g. `1.28`). Empty uses the live ECB rate, cached for 6 hours. |
 
 ## Pages
 
@@ -67,6 +71,7 @@ Conventions:
 - **Cost of sold units uses the weighted average cost.**
 - **Ratios with a zero denominator show "—"** rather than ∞ or NaN. Examples: margin with no revenue, ROI with no capital, average buy price with no buys.
 - **Oversold positions** (recorded after confirmation) are valued at zero held units, never at a negative cost basis.
+- **One currency, SGD.** Fetched TCGplayer prices are converted from USD when they're fetched, and the stored price is in SGD.
 - **Dates are calendar days** stored as UTC midnight and always displayed in UTC, so they never shift between time zones.
 
 ## Project layout
@@ -82,6 +87,7 @@ lib/
   metrics.ts           Pure calculation functions (+ metrics.test.ts)
   data.ts              Prisma reads → serializable view models
   tcg.ts               pokemontcg.io client (search, lookup, price selection, retries)
+  fx.ts                USD→SGD exchange rate (Frankfurter / ECB, or USD_SGD_RATE)
   db.ts                Prisma client (better-sqlite3 driver adapter)
 prisma/
   schema.prisma        Card and Transaction models

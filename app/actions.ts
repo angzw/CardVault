@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { formatMoney, formatUsd } from "@/lib/format";
+import { FxError, getUsdToSgd, usdToSgd } from "@/lib/fx";
 import { stockAfterChange, roundMoney, type TransactionKind } from "@/lib/metrics";
 import {
   findTcgMatch,
@@ -53,12 +55,12 @@ function parseTransaction(input: unknown) {
 
   const unitPrice = Number(raw.unitPrice);
   if (!Number.isFinite(unitPrice) || unitPrice < 0 || unitPrice > MAX_MONEY) {
-    fieldErrors.unitPrice = "Enter a price of $0.00 or more.";
+    fieldErrors.unitPrice = "Enter a price of S$0.00 or more.";
   }
 
   const fees = raw.fees === "" || raw.fees === undefined ? 0 : Number(raw.fees);
   if (!Number.isFinite(fees) || fees < 0 || fees > MAX_MONEY) {
-    fieldErrors.fees = "Enter fees of $0.00 or more.";
+    fieldErrors.fees = "Enter fees of S$0.00 or more.";
   }
 
   const date = parseDate(raw.date);
@@ -96,7 +98,7 @@ function refreshAll() {
 }
 
 function tcgErrorMessage(error: unknown): string {
-  return error instanceof TcgApiError
+  return error instanceof TcgApiError || error instanceof FxError
     ? error.message
     : "Something went wrong talking to pokemontcg.io. Try again.";
 }
@@ -186,14 +188,21 @@ export async function fetchMarketPrice(cardId: string): Promise<ActionResult> {
       error: "No matching card found on pokemontcg.io. Check the name, number and set.",
     };
   }
-  if (match.marketPrice === null) {
+  if (match.marketPriceUsd === null) {
     return { ok: false, error: "pokemontcg.io has no TCGplayer market price for this card yet." };
+  }
+
+  let marketPrice: number;
+  try {
+    marketPrice = usdToSgd(match.marketPriceUsd, await getUsdToSgd());
+  } catch (error) {
+    return { ok: false, error: tcgErrorMessage(error) };
   }
 
   await prisma.card.update({
     where: { id: card.id },
     data: {
-      currentMarketPrice: roundMoney(match.marketPrice),
+      currentMarketPrice: marketPrice,
       marketPriceUpdatedAt: new Date(),
       // Link manually entered cards once a match is found, and backfill art.
       apiCardId: card.apiCardId ?? match.apiCardId,
@@ -202,19 +211,56 @@ export async function fetchMarketPrice(cardId: string): Promise<ActionResult> {
     },
   });
   refreshAll();
-  return { ok: true, message: `Market price updated to $${match.marketPrice.toFixed(2)}.` };
+  return {
+    ok: true,
+    message: `Market price updated to ${formatMoney(marketPrice)} (${formatUsd(match.marketPriceUsd)} on TCGplayer).`,
+  };
 }
+
+/** Catalog search result with the TCGplayer price converted to SGD. */
+export type CatalogCard = TcgCardSuggestion & { marketPrice: number | null };
 
 export async function searchCatalog(
   query: string,
-): Promise<{ ok: true; results: TcgCardSuggestion[] } | { ok: false; error: string }> {
+): Promise<{ ok: true; results: CatalogCard[] } | { ok: false; error: string }> {
   const q = String(query ?? "").trim().slice(0, 100);
   if (q.length < 2) return { ok: true, results: [] };
+  let results: TcgCardSuggestion[];
   try {
-    return { ok: true, results: await searchTcgCards(q) };
+    results = await searchTcgCards(q);
   } catch (error) {
     return { ok: false, error: tcgErrorMessage(error) };
   }
+  // Without an exchange rate, still return matches; prices just stay blank.
+  const fx = await getUsdToSgd().catch(() => null);
+  return {
+    ok: true,
+    results: results.map((r) => ({
+      ...r,
+      marketPrice: fx && r.marketPriceUsd !== null ? usdToSgd(r.marketPriceUsd, fx) : null,
+    })),
+  };
+}
+
+const IMAGE_URL_ERROR = "Use an https:// image URL.";
+
+function isValidImageUrl(value: string): boolean {
+  return /^https:\/\/\S+$/.test(value) && value.length <= 500;
+}
+
+/** Sets or clears a card's image. An empty URL removes the image. */
+export async function updateCardImage(cardId: string, imageUrl: string): Promise<ActionResult> {
+  const url = String(imageUrl ?? "").trim();
+  if (url && !isValidImageUrl(url)) {
+    return { ok: false, error: IMAGE_URL_ERROR, fieldErrors: { imageUrl: IMAGE_URL_ERROR } };
+  }
+
+  const card = await prisma.card.findUnique({ where: { id: String(cardId) }, select: { id: true } });
+  if (!card) return { ok: false, error: "This card no longer exists." };
+
+  await prisma.card.update({ where: { id: card.id }, data: { imageUrl: url || null } });
+  refreshAll();
+  return { ok: true, message: url ? "Image updated." : "Image removed." };
 }
 
 export interface NewCardInput {
@@ -244,13 +290,13 @@ function parseNewCard(input: unknown): Parsed<Omit<NewCardInput, "initialBuy">> 
   if (!setName) fieldErrors.setName = "Enter the set name.";
 
   const imageUrl = text(raw.imageUrl, 500) || null;
-  if (imageUrl && !/^https:\/\/\S+$/.test(imageUrl)) fieldErrors.imageUrl = "Use an https:// image URL.";
+  if (imageUrl && !isValidImageUrl(imageUrl)) fieldErrors.imageUrl = IMAGE_URL_ERROR;
 
   let currentMarketPrice: number | null = null;
   if (raw.currentMarketPrice !== null && raw.currentMarketPrice !== undefined && raw.currentMarketPrice !== "") {
     const price = Number(raw.currentMarketPrice);
     if (!Number.isFinite(price) || price < 0 || price > MAX_MONEY) {
-      fieldErrors.currentMarketPrice = "Enter a price of $0.00 or more.";
+      fieldErrors.currentMarketPrice = "Enter a price of S$0.00 or more.";
     } else {
       currentMarketPrice = roundMoney(price);
     }

@@ -3,8 +3,9 @@
  * metric (averages, realized profit, margins, unrealized P&L) is populated.
  *
  * Run with `npm run db:seed`. This REPLACES all cards and transactions.
- * Market prices are TCGplayer market values captured October 2026; use
- * "Fetch market price" on a card page to refresh them.
+ * All amounts are SGD. Market prices are TCGplayer (USD) market values from
+ * October 2026 converted at the ECB rate of the day; use "Fetch market price"
+ * on a card page to refresh them.
  */
 import "dotenv/config";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
@@ -28,6 +29,10 @@ interface SeedCard {
   transactions: SeedTx[];
 }
 
+/** ECB USD→SGD reference rate, 28 Oct 2026. */
+const USD_SGD = 1.2821;
+const sgd = (usd: number) => Math.round(usd * USD_SGD * 100) / 100;
+
 const img = (apiCardId: string) => {
   const [set, number] = apiCardId.split("-");
   return `https://images.pokemontcg.io/${set}/${number}.png`;
@@ -42,7 +47,7 @@ const cards: SeedCard[] = [
     setName: "Base",
     language: "English",
     imageUrl: img("base1-4"),
-    currentMarketPrice: 954.65,
+    currentMarketPrice: sgd(954.65),
     transactions: [
       ["BUY", "2025-02-10", 1, 720, 18, "Local card show, LP"],
       ["BUY", "2025-06-03", 1, 810, 0, "Collection buyout"],
@@ -57,7 +62,7 @@ const cards: SeedCard[] = [
     setName: "Evolving Skies",
     language: "English",
     imageUrl: img("swsh7-215"),
-    currentMarketPrice: 2264.7,
+    currentMarketPrice: sgd(2264.7),
     transactions: [
       ["BUY", "2025-01-20", 1, 1580, 25, "Moonbreon, NM"],
       ["BUY", "2025-09-12", 1, 1890, 0, "Trade-in credit"],
@@ -71,7 +76,7 @@ const cards: SeedCard[] = [
     setName: "Scarlet & Violet Black Star Promos",
     language: "English",
     imageUrl: img("svp-85"),
-    currentMarketPrice: 1000.59,
+    currentMarketPrice: sgd(1000.59),
     transactions: [
       ["BUY", "2025-03-01", 4, 185, 12, "Van Gogh Museum release"],
       ["SELL", "2025-11-20", 2, 640, 166.4, "TCGplayer"],
@@ -85,7 +90,7 @@ const cards: SeedCard[] = [
     setName: "Surging Sparks",
     language: "English",
     imageUrl: img("sv8-238"),
-    currentMarketPrice: 274.44,
+    currentMarketPrice: sgd(274.44),
     transactions: [
       ["BUY", "2024-12-05", 3, 205, 9],
       ["BUY", "2025-04-18", 2, 240, 0],
@@ -100,7 +105,7 @@ const cards: SeedCard[] = [
     setName: "Silver Tempest",
     language: "English",
     imageUrl: img("swsh12-186"),
-    currentMarketPrice: 488.36,
+    currentMarketPrice: sgd(488.36),
     transactions: [
       ["BUY", "2025-05-22", 1, 395, 8, "Alt art"],
       ["SELL", "2026-07-09", 1, 520, 67.6, "eBay"],
@@ -114,7 +119,7 @@ const cards: SeedCard[] = [
     setName: "Lost Origin",
     language: "English",
     imageUrl: img("swsh11-186"),
-    currentMarketPrice: 851.13,
+    currentMarketPrice: sgd(851.13),
     transactions: [["BUY", "2025-07-30", 1, 610, 0, "Alt art"]],
   },
   {
@@ -125,7 +130,7 @@ const cards: SeedCard[] = [
     setName: "151",
     language: "English",
     imageUrl: img("sv3pt5-199"),
-    currentMarketPrice: 323.37,
+    currentMarketPrice: sgd(323.37),
     transactions: [
       ["BUY", "2025-02-25", 2, 265, 6],
       ["SELL", "2026-01-15", 1, 240, 31.2, "Sold during a dip"],
@@ -140,7 +145,7 @@ const cards: SeedCard[] = [
     setName: "Eevee Heroes",
     language: "Japanese",
     imageUrl: null,
-    currentMarketPrice: 1350,
+    currentMarketPrice: 1730,
     transactions: [["BUY", "2025-10-08", 1, 1100, 35, "Imported, PSA 9 candidate"]],
   },
 ];
